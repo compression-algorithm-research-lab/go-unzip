@@ -6,16 +6,19 @@ import (
 	"sync"
 )
 
+// Unzip 用于封装解压缩的逻辑
 type Unzip struct {
 	options *Options
 }
 
+// New 从选项创建一个解压缩组件
 func New(options *Options) *Unzip {
 	return &Unzip{
 		options: options,
 	}
 }
 
+// FileHandler 用来处理解压出来的文件
 type FileHandler func(file *File, options *Options) error
 
 // SafeTraversal 安全的遍历压缩文件，遇到非法的或者错误的压缩文件时会自动检测报错
@@ -76,7 +79,9 @@ func (x *Unzip) Traversal(handler FileHandler) (err error) {
 func (x *Unzip) makeZipFileChannel(files []*zip.File) chan *File {
 	fileChannel := make(chan *File, len(files))
 	for _, f := range files {
-		fileChannel <- &File{f}
+		fileChannel <- &File{
+			File: f,
+		}
 	}
 	close(fileChannel)
 	return fileChannel
@@ -110,7 +115,7 @@ func (x *Unzip) Unzip() error {
 	})
 }
 
-// Files 读取压缩包中的所有文件
+// Files 读取压缩包中的所有文件和内容并返回，注意这个方法会实际解压缩文件，确保你机器的资源是足够的
 func (x *Unzip) Files() (fileSlice []*File, err error) {
 
 	var r *zip.ReadCloser
@@ -122,14 +127,19 @@ func (x *Unzip) Files() (fileSlice []*File, err error) {
 	defer func() {
 		// 如果有其它错误的话，优先返回其它错误的类型
 		localError := r.Close()
-		if err == nil {
+		if localError != nil && err == nil {
 			err = localError
 		}
 	}()
 
 	fileSlice = make([]*File, len(r.File))
 	for i, f := range r.File {
-		fileSlice[i] = &File{f}
+		file := File{File: f}
+		_, err := file.ReadBytes()
+		if err != nil {
+			return nil, err
+		}
+		fileSlice[i] = &file
 	}
 
 	return fileSlice, nil

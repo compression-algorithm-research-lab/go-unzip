@@ -7,23 +7,47 @@ import (
 	"path/filepath"
 )
 
+// File 用于表示一个zip压缩文件，在原生的zip file上封装了一些基础操作
 type File struct {
+
+	// 底层基于的zip file
 	*zip.File
+
+	// 文件的字节内容，对读文件内容解压缩做一个缓存
+	fileUnzipCacheBytes []byte
 }
 
-// ReadBytes 读取此文件的字节
-func (x *File) ReadBytes() (bytes []byte, err error) {
-	open, err := x.Open()
-	if err != nil {
-		return nil, err
+// NewFile 从压缩文件创建文件
+func NewFile(zipFile *zip.File) *File {
+	return &File{
+		File: zipFile,
+	}
+}
+
+// ReadBytes 读取此压缩文件的字节数组
+func (x *File) ReadBytes() (bytes []byte, returnError error) {
+
+	// 如果之前已经读取过了，则返回缓存，不再重复读取
+	if x.fileUnzipCacheBytes != nil {
+		return x.fileUnzipCacheBytes, nil
+	}
+
+	open, returnError := x.Open()
+	if returnError != nil {
+		return nil, returnError
 	}
 	defer func() {
-		err = open.Close()
+		err := open.Close()
+		// 避免覆盖掉更重要的错误
+		if err != nil && returnError == nil {
+			returnError = err
+		}
 	}()
-	return io.ReadAll(open)
+	x.fileUnzipCacheBytes, returnError = io.ReadAll(open)
+	return x.fileUnzipCacheBytes, returnError
 }
 
-// Save 把此文件保存到硬盘上给定的位置，不会自动创建父目录
+// Save 把此文件解压并保存到硬盘上给定的位置
 func (x *File) Save(path string) (err error) {
 	if x.FileInfo().IsDir() {
 		// 如果是目录的话，则创建对应的目录
