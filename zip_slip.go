@@ -9,6 +9,8 @@ import (
 )
 
 // IsZipSlip 对单个文件进行zip slip检查
+// baseDirectory: 要解压到的目录
+// filename: 要解压的文件的名称
 func IsZipSlip(baseDirectory, filename string) bool {
 	if baseDirectory == "" {
 		baseDirectory = "fake-directory"

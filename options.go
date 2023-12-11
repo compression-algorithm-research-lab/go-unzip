@@ -1,5 +1,7 @@
 package unzip
 
+import "github.com/golang-infrastructure/go-pointer"
+
 // DefaultUnzipWorkerNum 如果没有指定的话，默认情况下解压使用的并发数是多少
 const DefaultUnzipWorkerNum = 1
 
@@ -12,13 +14,13 @@ type Options struct {
 	// 解压到的目标文件夹，必须是一个目录，如果不存在的话会自动创建，如果已经存在的话尽量为空，否则可能会被重复覆盖写文件
 	DestinationDirectory string
 
-	// 解压的时候使用的并发数
-	WorkerNum int
+	// 解压的时候使用的并发数，如果不指定的话默认为 DefaultUnzipWorkerNum
+	WorkerNum *int
 }
 
 func NewOptions() *Options {
 	return &Options{
-		WorkerNum: DefaultUnzipWorkerNum,
+		WorkerNum: pointer.ToPointer(DefaultUnzipWorkerNum),
 	}
 }
 
@@ -36,6 +38,6 @@ func (x *Options) SetDestinationDirectory(destinationDirectory string) *Options 
 
 // SetWorkerNum 设置解压时使用到的并发数
 func (x *Options) SetWorkerNum(workerNum int) *Options {
-	x.WorkerNum = workerNum
+	x.WorkerNum = pointer.ToPointer(workerNum)
 	return x
 }

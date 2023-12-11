@@ -3,6 +3,7 @@ package unzip
 import (
 	"archive/zip"
 	"fmt"
+	"github.com/golang-infrastructure/go-pointer"
 	"sync"
 )
 
@@ -37,7 +38,7 @@ func (x *Unzip) Traversal(handler FileHandler) (err error) {
 	// 参数检查
 	if x.options.SourceZipFile == "" {
 		return ErrSourceZipFileEmpty
-	} else if x.options.WorkerNum <= 0 {
+	} else if x.options.WorkerNum == nil || pointer.FromPointer(x.options.WorkerNum) <= 0 {
 		return ErrWorkerNumInvalid
 	}
 
@@ -61,7 +62,7 @@ func (x *Unzip) Traversal(handler FileHandler) (err error) {
 
 	// 并发处理压缩文件中的每个文件
 	var wg sync.WaitGroup
-	for i := 0; i < x.options.WorkerNum; i++ {
+	for i := 0; i < pointer.FromPointer(x.options.WorkerNum); i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -101,7 +102,7 @@ func (x *Unzip) makeZipFileChannel(files []*zip.File) chan *File {
 func (x *Unzip) Unzip() error {
 
 	// 参数检查
-	if x.options.WorkerNum <= 0 {
+	if x.options.WorkerNum == nil || pointer.FromPointer(x.options.WorkerNum) <= 0 {
 		return ErrWorkerNumInvalid
 	} else if x.options.SourceZipFile == "" {
 		return ErrSourceZipFileEmpty
